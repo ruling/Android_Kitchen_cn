@@ -1,0 +1,16 @@
+############################################################################
+#
+# Copyright (c) 2012 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+device_name=`scripts/get_samsung_variant`
+
+if [ "$device_name" == "" ]
+then
+  device_name=`scripts/get_device_name`
+fi
+
+echo $device_name

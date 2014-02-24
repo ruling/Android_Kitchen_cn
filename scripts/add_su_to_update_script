@@ -1,0 +1,84 @@
+############################################################################
+#
+# Copyright (c) 2012 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+if [ -e update-script ]
+then
+
+  #
+  # 删除任何现有的行，随着 bin/su 为防止冲突结束
+  #
+  sed -i -e '/bin\/su[ ]*$/d' update-script
+
+  #
+  # Do this to prevent conflicts with the update-script in ROMs that already have the binary
+  #  
+  if [ -e ../../../../system/bin/su ]
+  then
+
+    if [ "`find ../../../../system/xbin -name su`" == "" ]
+    then
+      echo "正在移动 system/bin/su 到 system/xbin/su ..."
+      mkdir -p ../../../../system/xbin
+      mv -f ../../../../system/bin/su ../../../../system/xbin/su
+    else
+      echo "已经发现 /system/xbin/su ，正在删除 /system/bin/su ..."
+      rm -f ../../../../system/bin/su
+    fi
+
+  elif [ "`find ../../../../system/xbin -name su`" == "" ]
+  then
+    echo "错误: 未发现 /system/xbin/su 和 /system/bin/su ！"
+    cd ../../../../..
+    echo
+    exit 0
+  fi
+
+  echo
+  echo "正在添加 su 相关内容和代码链接到 update-script 刷机脚本中 ..."
+
+  if [ `grep -c "set_perm_recursive.*SYSTEM:xbin[ ]*$" update-script` != 0 ]
+  then
+    sed -i -e 's/set_perm_recursive\(.*\)SYSTEM:xbin[ ]*$/set_perm_recursive\1SYSTEM:xbin\nset_perm 0 0 06755 SYSTEM:xbin\/su\nsymlink \/system\/xbin\/su SYSTEM:bin\/su\n/' update-script
+  
+  elif [ `grep -c "init.goldfish.sh" update-script` != 0 ]
+  then
+    sed -i -e 's/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh\nset_perm 0 0 06755 SYSTEM:xbin\/su\nsymlink \/system\/xbin\/su SYSTEM:bin\/su/g' update-script
+
+  elif [ `grep -c "write_raw_image .*:boot.img BOOT:" update-script` != 0 ]
+  then
+    sed -i -e 's/write_raw_image \(.*:boot.img\) BOOT:/set_perm 0 0 06755 SYSTEM:xbin\/su\nsymlink \/system\/xbin\/su SYSTEM:bin\/su\nwrite_raw_image \1 BOOT:/' update-script
+  
+  else
+    echo "set_perm 0 0 06755 SYSTEM:xbin/su" >> update-script
+    echo "symlink /system/xbin/su SYSTEM:bin/su" >> update-script
+  fi
+
+  if [ ! -d ../../../../system/bin ]
+  then
+    echo "正在创建 /system/bin 文件夹"
+    mkdir -p ../../../../system/bin
+    touch ../../../../system/bin/placeholder
+  fi
+
+  if [ `grep -c "/xbin/su " update-script` == 0 ]
+  then
+    echo "错误: 无法在 update-script 刷机脚本中添加 su 相关内容！"
+  fi
+
+else
+  echo "错误: 未发现 update-script 刷机脚本！"
+fi
+
+cd ../../../../..
+
+scripts/fix_update_script_blanks
+

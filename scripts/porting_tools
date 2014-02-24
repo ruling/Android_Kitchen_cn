@@ -1,0 +1,61 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+
+clear
+
+while :
+do
+
+  clear
+
+  echo
+  echo "移植工具 - 仅限高级用户使用！"
+  echo "----------------------------------"
+  echo
+  echo "请注意: 此操作还只是实验性功能，并不一定适用所有设备。"
+  echo "警告：移植选项只处于试验阶段，只适用于高级用户。脚本使用一般的规则集，"
+  echo "用于移植的ROM，所以可能需要由用户手动进行的一些额外的步骤。"
+  echo
+  echo "如果你是新开发的ROM，那么不要使用这个选项，直到您已经"
+  echo "了解ROM的一些基本创建知识(非移植!) 并了解它们是如何工作的!"
+  echo
+  echo "请输入选项:"
+  echo 
+
+  echo "  a = 从另一设备移植 ROM"
+  echo "  e = 从另外一个 ROM 提取 kernel 和 modules"
+  echo "  x = 退出"
+  echo
+  echo -n "请输入选择项 "
+
+  read enterLetter
+
+  if [ "$enterLetter" == "a" ]
+  then
+    scripts/port_rom
+    
+    if [ "$?" == "1" ]
+    then
+      continue
+    fi
+
+  elif [ "$enterLetter" == "e" ]
+  then
+    scripts/call_extract_kernel_and_modules
+  elif [ "$enterLetter" == "x" ]
+  then
+    exit 0
+  else 
+    echo "错误选择项"
+    continue
+  fi
+
+  scripts/press_enter
+
+done

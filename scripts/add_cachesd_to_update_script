@@ -1,0 +1,67 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+###########################################################################
+
+
+
+cd WORKING_*
+
+if [ -d system/sd ]
+then
+  if [ ! -e move_cache_sd ]
+  then
+
+    echo -n "你是否想移动 dalvik-cache 到 SD 卡中(y/n)? (默认为: y): "
+    read do_cachesd
+
+    if [ "$do_cachesd" != "n" ]
+    then
+
+      cd ..
+      scripts/add_busybox
+      cd WORKING_*
+
+      echo "正在添加 move_cache_sd 到工作文件夹中 ..."
+      cp ../tools/apps2sd_files/move_cache_sd .
+
+      cd META-INF/com/google/android 
+
+      if [ `grep -c move_cache_sd update-script` == 0 ]
+      then
+        echo "正在添加 move_cache_sd 到 update-script 刷机脚本中 ..."
+        if [ `grep -c "write_raw_image .*:boot.img BOOT:" update-script` != 0 ]
+        then
+          sed -i -e 's/write_raw_image \(.*boot.img\) BOOT:/run_program PACKAGE:move_cache_sd\nwrite_raw_image \1 BOOT:/' update-script
+        else
+          echo "run_program PACKAGE:move_cache_sd" >> update-script
+        fi
+      fi
+
+      if [ `grep -c move_cache_sd update-script` == 0 ]
+      then
+        echo "错误: 未能添加 move_cache_sd 到 update-script 脚本中！"
+      else
+        echo "move_cache_sd 相关内容已经存在于 update-script 脚本中！"
+      fi
+
+      cd ../../../..
+
+    fi
+
+  else
+    echo "move_cache_sd 已在工作文件夹发现"
+
+  fi
+
+else
+  echo "警告: 未在工作文件夹中找到 system/sd ！"
+
+fi
+
+cd ..
+scripts/fix_update_script_blanks
+

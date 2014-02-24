@@ -1,0 +1,537 @@
+############################################################################
+#
+# Copyright (c) 2013 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+
+clear
+echo
+
+if [ -d WORKING_* ]
+then
+  echo "已找到工作文件夹！"
+else
+  echo "错误:  未找到工作文件夹！"
+  exit 0
+fi
+
+cd WORKING_*
+
+if [ -e META-INF/com/google/android/update-script ] && [ -e META-INF/com/google/android/updater-script ]
+then
+
+  echo
+  echo "错误:  update-script 和 updater-script 同时存在工作文件夹中。" 
+  echo "       请在制作ROM前确保只有一个刷机脚本文件!" 
+  echo
+
+  cd ..
+  exit 0
+fi
+
+
+
+echo
+echo "清除所有临时及残留文件中 ..."
+echo
+
+rm -f *.zip
+rm -f testkey.*
+rm -f signapk.jar
+rm -f signed*.zip
+rm -f *smali.jar
+
+#
+# 清理  *.DS_Store 隐藏文件
+#
+find . -name '*.DS_Store' -type f -delete
+
+#
+# 清理 stackdump 文件
+#
+find . -name sh.exe.stackdump -type f -delete
+
+
+#
+# 清理临时文件留下的 Amend/Edify 转换脚本
+#
+if [ -d META-INF/com/google/android ]
+then
+  find META-INF/com/google/android/ -name 'sed*' -type f -delete
+fi
+
+
+#
+# 清理工作文件夹ROOT目录中奇怪的临时文件问题
+#
+
+file_list=`find . -maxdepth 1 -type f`
+
+for filename in $file_list
+do
+
+  filename=`echo $filename | sed 's/\.\///g'`
+  header_bytes=`od -A n -H -j 0 -N 4 $filename | sed 's/ //g'`
+
+  if [ "$header_bytes" == "04034b50" ]
+  then
+    echo -n "已在ROOT文件夹中找到文件: $filename. 删除 (y/n)? (默认为: y): "
+    read delete_file
+
+    if [ "$delete_file" != "n" ]
+    then
+      echo "正在删除 $filename"
+      rm -f $filename
+    else
+      echo "正在保留 $filename"
+    fi
+  fi
+done
+
+
+cd ..
+scripts/prompt_nand_type
+cd WORKING_*
+
+
+echo
+echo `pwd`
+echo
+ls -lrt
+cd ..
+echo
+
+
+scripts/fix_pre_build
+
+# 检查有'dsixda Null'
+cmd_line=`scripts/get_cmdline`
+
+extreme=no
+express=no
+interactive=no
+
+echo
+echo "=========================================================================="
+echo
+echo "选择生成选项:"
+echo
+echo "  1 = 交互模式 - 推荐大部分用户选择"
+echo "      (制作过程中进行指导操作)"
+echo
+echo "  2 = 懒人模式 - 让厨房来帮你完成所有的工作"
+echo "      (自动执行Zipalign和Edify操作, 对ROM进行签名操作, 自动命名ZIP文件)"
+echo
+echo "  3 = 快速模式 - 仅为高级用户"
+echo "      (自动执行Zipalign和Edify操作, 不对ROM进行签名操作, 自动命名ZIP文件)"
+echo 
+echo "  4 = 高级模式 - 仅为高级用户"
+echo "      (不自动执行zipalign操作, 没有刷机脚本转换, 不对ROM进行签名操作, 自动命名ZIP文件)"
+echo 
+echo "  5 = 取消 - 现在不生成ROM"
+echo
+echo "=========================================================================="
+echo
+echo -n "请输入选择项(默认为: 1): "
+
+read build_mode
+
+# 默认值为 1,所以记住回车键键
+if [ "$build_mode" == "5" ]
+then
+  echo "已取消操作"
+  exit 0
+elif [ "$build_mode" == "4" ]
+then
+  extreme=yes  
+elif [ "$build_mode" == "3" ]
+then
+  express=yes 
+elif [ "$build_mode" == "2" ]
+then
+  lazy=yes
+  express=yes
+else
+  interactive=yes
+fi
+
+
+if [ "$extreme" == "no" ]
+then
+  scripts/do_zipalign for_build $express
+fi
+
+if [ "$?" == "1" ]
+then
+  echo "正在取消制作中 ..."
+  exit 0
+fi
+
+cd WORKING_*
+
+
+#
+# 在 ZIP 文件中只将 update-script (Amend) 转换为 updater-script (Edify) 
+#
+
+if [ "$extreme" == "no" ] && [ -e META-INF/com/google/android/update-script ]
+then
+ 
+  cd ..
+  scripts/update_script_should_convert_back
+  auto_convert="$?"
+  cd WORKING_*
+  
+  if [ "$auto_convert" == "1" ] || [ "$express" == "yes" ]
+  then 
+    convert_it=y
+    want_file=updater-script
+
+  else
+    echo
+    echo "--------------------------------------------------------------------------"
+    echo 
+    echo " 在工作文件夹中检测到 update-script 刷机脚本！"
+    echo
+    echo " 为确保新版 Recovery （3.X以后）的兼容性，你可以选择在你的 ROM 中使用"
+    echo " updater-script (Edify) 新版脚本而不是 update-script (Amend)旧版脚本。"
+    echo 
+    echo " 你的工作文件夹中仍会继续保持原有 update-script 刷机脚本！"
+    echo 
+    echo -n " 是否在 ROM 中添加updater-script (Edify) 新版脚本(y/n)? (默认为: y): "
+    read convert_it
+  fi
+
+
+  if [ "$convert_it" != "n" ]
+  then
+
+    # Remove installbusybox (it's compatible with updater-script, but
+    # Edify syntax also supports run_program with multiple args)
+    if [ -e installbusybox ] 
+    then
+      cd ..
+      scripts/add_busybox_to_update_script
+      cd WORKING_*
+    fi
+
+    cd ..
+    scripts/convert_update_script for_zip $express
+
+    # updater-script has been produced
+    if [ "$?" != "1" ]
+    then
+
+      cd WORKING_*
+
+      if [ "$express" == "yes" ]
+      then
+        proceed_change=y
+      else
+        echo "保留更改并继续 (y/n)?"
+        echo 
+        echo "  y = 继续；将会添加 updater-script 和 update-binary 脚本文件到 ZIP 文件中；"
+        echo "      ZIP 文件中的update-script脚本文件将会被删除，但仍保留在工作文件夹中。"
+	echo
+        echo "  n = 取消; updater-script and update-binary 将被删除"
+        echo "      不使用."
+        echo
+         
+        echo -n "? (默认为: y): "
+        read proceed_change 
+      fi
+
+      echo
+
+      if [ "$proceed_change" != "n" ]
+      then
+
+        if [ -e META-INF/com/google/android/updater-script ]
+        then
+          ../scripts/convert_to_unix META-INF/com/google/android/updater-script 
+          want_file=updater-script
+        else
+          echo "未发现 updater-script 脚本，保留 update-script 脚本"
+          want_file=update-script
+        fi
+
+      else
+        echo
+        echo "正在取消中 ...-我们将使用更新的ZIP文件中的脚本"
+        want_file=update-script
+        rm -fv META-INF/com/google/android/updater-script
+        rm -fv META-INF/com/google/android/update-binary
+        echo
+      fi
+
+
+      if [ "$auto_convert" == "1" ] && [ "$proceed_change" == "n" ]
+      then
+        echo "你的 ROM 文件不适用此 update-script脚本文件！"
+        echo
+        cd ..
+        exit 0
+      fi
+
+    else
+      echo "正在保留 update-script 脚本文件 ..."
+      cd WORKING_*
+      want_file=update-script
+    fi
+
+  else
+    echo
+    echo
+    echo "正在保留 update-script 脚本文件 ..."
+    want_file=update-script
+  fi
+
+  echo
+
+else
+
+  echo
+
+  if [ -e META-INF/com/google/android/update-script ]
+  then
+    echo "发现 update-script (Amend) 脚本文件"
+    want_file=update-script
+  fi
+  
+  if [ -e META-INF/com/google/android/updater-script ]
+  then
+    echo "发现 updater-script (Edify) 脚本文件"
+    want_file=updater-script
+  fi
+
+  echo
+fi
+
+
+
+
+
+
+if [ "$want_file" == "updater-script" ]
+then
+  script_not_want=*update-script*
+  binary_not_want=""
+else
+
+  # Remove any run_program references to busybox with multiple args
+  # and replace with the installbusybox script. This is compatible
+  # with update-script.
+  if [ -e system/xbin/busybox ]
+  then
+    cd ..
+    scripts/add_busybox_to_update_script amend
+    cd WORKING_*
+  fi
+
+  script_not_want=*updater-script*
+  binary_not_want=*update-binary*
+fi
+
+if [ "$cmd_line" == "dsixda Null" ]
+then
+  boot_not_want=boot.img
+else
+  boot_not_want=""
+fi
+
+
+#
+# Create update.zip
+#
+echo
+echo "正在制作 update.zip ..."
+
+zip -r -y -q update * -x *.cvs* *.git* *.svn* \
+    *updater-script.orig* *update-binary.orig* *update-script.orig* \
+    $script_not_want $binary_not_want $boot_not_want
+
+
+echo
+
+# Remove updater-script from working folder if update-script already exists
+cd META-INF/com/google/android
+if [ -e update-script ]
+then
+  rm -f updater-script
+  rm -f update-binary
+fi
+
+cd ../../../..
+
+
+if [ -e update.zip ]
+then
+  echo "update.zip 已制作完成！"
+  echo
+else
+  echo "错误: update.zip 没能成功制作!"
+  cd ..
+  exit 0
+fi
+
+
+
+#
+# Sign update.zip if necessary
+#
+
+date_str=`date '+%m%d%y_%H%M%S'`
+
+cd ..
+device=`scripts/get_device_name | sed 's/ /_/g'`
+cd WORKING_*
+
+
+sign_update=no
+sign_str=unsigned
+
+if [ "$lazy" == "yes" ]
+then
+  do_sign=y
+else
+  do_sign=n
+fi
+
+if [ "$interactive" == "yes" ]
+then
+  echo
+  echo "建议为你的ROM文件进行签名操作！"
+  echo -n "是否签名(y/n)? (默认为: y): "
+  read do_sign
+fi
+
+if [ "$do_sign" != "n" ]
+then
+  sign_update=yes
+  sign_str=signed
+fi
+
+final_file=$device\_$sign_str\_$date_str.zip
+
+
+if [ "$sign_update" == "no" ]
+then
+  mv update.zip $final_file
+  res=$?
+
+else
+  echo
+  echo "正在签名 update.zip ..."
+
+  cp ../tools/signapk_files/testkey.* .
+  cp ../tools/signapk_files/signapk.jar .
+
+  java -jar signapk.jar testkey.x509.pem testkey.pk8 update.zip $final_file
+  res=$?
+
+  rm -f testkey.*
+  rm -f signapk.jar
+  rm -f update.zip
+fi
+
+
+if [ -e $final_file ] && [ "$res" == "0" ]
+then
+
+  #
+  # 重命名 zip
+  #
+  if [ "$interactive" == "yes" ]
+  then
+    cd ..
+    final_file2=`scripts/set_update_name $final_file`
+    cd WORKING_*
+    if [ "$final_file2" != "$final_file" ]
+    then
+      mv -fv $final_file $final_file2
+      final_file=$final_file2
+    fi
+  fi
+
+  echo
+
+  #
+  # 创建 Output 文件夹
+  #
+  if [ -d ../OUTPUT_ZIP ]
+  then
+    echo "已发现 OUTPUT_ZIP 文件夹" 
+  else
+    echo "正在建立 OUTPUT_ZIP 文件夹 ..."
+    mkdir ../OUTPUT_ZIP
+  fi
+
+  mv $final_file ../OUTPUT_ZIP/
+
+  echo
+  echo
+  echo
+  echo "=========================================================================="
+  echo
+  echo "祝贺你，制作完成，您的ROM文件位于此位置：:"
+  echo
+  echo "----> OUTPUT_ZIP/$final_file" 
+  echo
+  echo
+  echo "复制ROM文件到您的储存卡中，然后进入Recovery菜单操作将其刷入手机。"
+  echo
+
+  echo "如果有必要的话，请先执行wipe操作！"
+  echo
+  echo "如果你制作的ROM不能启动,请参阅故障常见问题"
+
+  if [ "$sign_update" == "no" ]
+  then
+    echo
+    echo "请注意:您需要在Recovery菜单选项中禁用签名校验功能来刷入这个ROM！"
+    echo "如果您想稍后签名这个ROM，请使用定制工具的高级菜单中签名ZIP选项"
+    echo
+  fi
+
+  echo
+
+else 
+
+  echo
+  echo "不能创建 $final_file!"
+  echo
+
+  if [ "$sign_update" == "yes" ]
+  then
+    if [ `uname | grep Linux` ] 
+    then
+      echo "请确定您已经安装 Sun Java JDK 的最新版本！"
+    
+    elif [ `uname | grep CYGWIN` ]
+    then
+      echo "请确保您的电脑已经装好了 Sun Java JDK ！" 
+      echo
+      echo "如果您已经安装 JDK，还是发生错误，请检查是否在环境变量中"
+      echo "正确的添加了 java.exe ！"
+      echo 
+      echo "例如 在 $HOME/.bash_profile 文件的最后一行中添加:"
+      echo "     PATH=/cygdrive/c/Program\ Files/Java/jdk1.6.0_18/bin:\${PATH}" 
+      echo 
+      echo "上面一段是环境变量的示例，您的机器根据实际情况确定！"
+
+    elif [ `sw_vers | grep -o Mac` ]
+    then
+      echo "对于 Mac OS X 的用户，您可能需要安装 SoyLatte(作为对标准 Java JDK 的替代)"
+      echo
+    fi
+  fi
+fi
+
+cd ..
+
+# System beep
+echo 
+

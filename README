@@ -1,0 +1,27 @@
+
+Welcome to dsixda's Android Kitchen.  This is a ROM customization kitchen used for Android devices made by manufacturers such as HTC, Samsung and many others.
+
+Downloading the kitchen:
+
+To get the latest (as well as older) official releases from GitHub: 
+https://github.com/dsixda/Android-Kitchen/releases 
+
+To get the latest beta release from Github (newer than official, yet to be tagged as a release): 
+https://github.com/dsixda/Android-Kitchen/archive/master.zip
+
+
+A list of supported devices, as well as release notes, setup instructions and FAQ are all found here:
+http://forum.xda-developers.com/showthread.php?p=5626292
+更新说明：
+
+修改官方三页菜单为两页
+
+增加 Galaxy S4 variants (AT&T/Rogers/Bell/Telus/T-Mobile) (测试), GT-I9500/I9505（未测试） 的支持
+
+增加 HTC One (m7)支持
+
+修正了一个可能无法检测到的更新脚本BusyBox的条目，造成厨房可能添加其他BusyBox的门问题
+
+更新默认的符号链接列表更新脚本
+
+当在去odexing备份应用程序和框架文件夹，确保它们的子目录也包括

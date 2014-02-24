@@ -1,0 +1,35 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+###########################################################################
+
+
+#
+# 此脚本拥有一个可选参数:
+#
+# $1 = 文件夹包含 boot.img
+#
+
+base_dir=`pwd`
+
+if [ "$1" == "" ]
+then
+  if [ ! -d WORKING_* ]
+  then
+    echo "未发现工作文件夹！"
+    exit 0
+  fi
+  cd WORKING_*
+else
+  cd $1
+fi
+
+page_size=`od -A n -D -j 36 -N 4 boot.img | sed 's/ //g'`
+
+cd $base_dir
+echo $page_size
+
+

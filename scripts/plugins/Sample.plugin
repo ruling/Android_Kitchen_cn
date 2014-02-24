@@ -1,0 +1,19 @@
+
+echo
+echo Just a sample
+echo
+
+if [ -d WORKING_* ]
+then
+  echo "发现工作文件夹"
+else
+  echo "未发现工作文件夹!"
+  exit 0
+fi
+
+cd WORKING_*
+echo `pwd`
+echo
+ls -lrt
+cd ..
+

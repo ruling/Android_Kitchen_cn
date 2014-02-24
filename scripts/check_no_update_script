@@ -1,0 +1,100 @@
+############################################################################
+#
+# Copyright (c) 2012 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+ 
+temp=`ls WORKING_* 2>/dev/null`
+res=$?
+
+if [ "$res" == "2" ]
+then
+  echo "未发现工作文件夹！"
+  exit 0
+else
+  cd WORKING_*
+fi
+
+if [ ! -d META-INF/com/google/android ]
+then
+  echo "No META-INF/com/google/android folder found, creating it."
+  mkdir -p META-INF/com/google/android
+  echo
+fi
+
+cd META-INF/com/google/android
+
+
+if [ -e update-script ]
+then
+  echo "已经发现 update-script 刷机脚本"
+  cd ../../../../.. 
+
+else  
+
+  if [ -e updater-script ]
+  then
+
+    cd ../../../../..
+
+    echo
+    echo "======================================================="
+    echo
+    echo "已发现一个 updater-script 脚本而非 update-script 脚本。"
+    echo "由于定制工具脚本存在兼容性，只有 update-script 脚本可以"
+    echo "在定制工具中使用。（查看定制工具在论坛中的FAQ常见解释）"
+    echo ""
+
+    echo
+    echo "选择一个操作项号码:"
+    echo 
+    echo "  1 = 转换 updater-script 脚本为 update-script (修改格式)"
+    echo "  2 = 什么都不做，保持 updater-script 刷机脚本"
+    echo
+    echo "- 选项 #1 会将 updater-script（Edify）刷机脚本转换为"
+    echo "  update-script（Amend）刷机脚本。注意: 在 ROM 建立后"
+    echo "  将会把脚本改变回 Edify 格式。"
+    echo
+    echo "- 选项 #2 将不会进行任何操作吗，适用于不使用此定制工具"
+    echo "  制作 ROM 或转换成 update-script 刷机脚本后再操作。"
+    echo "  "
+    echo
+    echo -n " 请输入选择项： (默认=1) "
+
+    read enter_option
+    if [ "$enter_option" != "2" ]
+    then
+      scripts/convert_updater_script no_help
+      scripts/fix_update_script
+    else
+      echo
+      echo "警告: 厨房不使用 update-script 脚本会出现问题!"
+      exit 1
+    fi
+
+  else
+
+    cd ../../../../..
+
+    echo "无法发现 update-script 刷机脚本，正在创建一个 ..."
+    cd WORKING_*
+    cp ../tools/update_files/update-script META-INF/com/google/android/
+    cd ..
+    scripts/fix_update_script
+    scripts/fix_update_script_with_features
+
+    cd WORKING_*
+    bb=`find system -name busybox`
+    cd ..
+    if [ "$bb" != "" ]
+    then
+      scripts/add_busybox_to_update_script override
+    fi
+
+    echo
+  fi
+fi
+

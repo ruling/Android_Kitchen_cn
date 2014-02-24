@@ -1,0 +1,75 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+echo
+
+if [ -d BOOT-EXTRACTED ]
+then
+  echo "已发现 BOOT-EXTRACTED 文件夹，正在检查相关内容 ..."
+
+  if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+  then
+    echo "已发现 boot.img-ramdisk"
+
+    if [ -e BOOT-EXTRACTED/zImage ]
+    then
+      echo "已发现 zImage"
+    else
+      echo "无法发现 BOOT-EXTRACTED/zImage ！"
+      exit 0
+    fi
+
+  else
+    echo "无法发现 BOOT-EXTRACTED/boot.img-ramdisk 文件夹!"
+    exit 0
+  fi
+
+else
+  echo "无法发现 BOOT-EXTRACTED 文件夹！"
+  exit 0
+fi
+
+
+if [ -d WORKING_* ]
+then
+  echo "已发现工作文件夹！"
+else
+  echo "未发现工作文件夹！"
+  exit 0
+fi
+
+
+echo 
+echo "正在创建 initrd.gz ..."
+
+cd BOOT-EXTRACTED/boot.img-ramdisk
+find . | cpio -o -H newc | gzip > ../initrd.gz
+cd ..
+rm -rf boot.img-ramdisk
+
+cd ..
+cd WORKING_*
+
+if [ -e boot.img ]
+  then
+  echo
+  echo "用 NAND boot文件夹替换 Working 文件夹中 boot.img ..."
+  rm -f boot.img
+fi
+
+if [ -d boot ]
+then
+  echo
+  echo "正在删除旧的 NAND 引导文件夹 ..."
+  rm -rf boot
+fi
+
+mv ../BOOT-EXTRACTED boot
+cd ..
+
+

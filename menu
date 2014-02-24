@@ -1,0 +1,117 @@
+#!/bin/bash
+
+############################################################################
+#
+# Copyright (c) 2013 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+version=0.224
+
+
+if [ ! -e menu ]
+then
+  echo
+  echo "保证你是从这个文件的来源文件夹运行它，否则厨房将会在运行脚本的"
+  echo "时候出现问题。用./menu\命令运行工具，不要尝试其它的命令或方法！"
+  exit 0
+fi
+
+dir_list=( original_update scripts tools )
+error_found=0
+
+for check_dir in ${dir_list[@]}
+do
+  if [ ! -e $check_dir ]
+  then
+    echo "错误:'未发现 $check_dir' 文件夹"
+    error_found=1
+  fi
+done
+
+if [ $error_found == 1 ]
+then
+  echo
+  echo "请确认你已经正确安装了厨房"
+  exit 0
+fi
+
+
+chmod 755 scripts/*
+scripts/check_install_dir
+
+if [ "$?" == "1" ]
+then
+  exit 0
+fi
+
+scripts/init_kitchen
+scripts/check_binaries
+
+if [ "$?" == "1" ]
+then
+  exit 0
+fi
+
+
+while :
+do
+
+  clear
+
+  echo "============================================================"
+  echo " 安卓厨房 $version - 作者： dsixda (xda-developers.com)"
+  echo "============================================================"
+  echo 
+  echo "> 主菜单"
+  echo
+  echo "  1 - 导入 ROM 文件到工作文件夹"
+  echo "  2 - 添加 Root 最高权限"
+  echo "  3 - 添加 BusyBox 指令集"
+  echo "  4 - 关闭开机音乐"
+  echo "  5 - 对您的 ROM 进行 De-odex 操作（将apk和odex两个文件合并）"
+  echo "  6 - 对所有 Apk 文件进行 Zipalign 操作，优化内存占用"
+  echo "  7 - 更改 ROM 的 Wipe 操作状态"
+  echo "  8 - 更改 ROM 显示名称"
+  echo "  9 - 检查 update-script 刷机脚本是否有错误"
+  echo " 10 - 显示工作文件夹信息"
+  echo 
+  echo "  0 - 高级操作菜单"
+  echo " 99 - 从工作文件夹建立 ROM 刷机包"
+  echo
+  echo "  x - 退出"
+  echo 
+  echo -n "请输入选择项: "
+  read opt
+
+  if [ "$opt" != "x" ] && [ "$opt" != "u" ] && [ "$opt" != "1" ]
+  then
+    scripts/check_multiple_working
+  fi
+  
+  if [ "$?" != "1" ]
+  then
+    case $opt in
+      1) clear; scripts/check_rom; continue;;
+      2) scripts/do_root; continue;;
+      3) scripts/add_busybox show_help;;
+      4) scripts/disable_sounds;;
+      5) scripts/do_deodex; continue;; 
+      6) scripts/do_zipalign;;
+      7) scripts/change_wipe;;
+      8) scripts/change_rom_name;;
+      9) scripts/verify_update_script; continue;;
+      10) scripts/show_rom_info;;
+      0) scripts/menu_advanced $version; continue;;
+      99) scripts/build_rom;;
+      x) scripts/init_kitchen; clear; echo; echo "再见."; echo; exit 1;;
+      *) echo "错误选择项"; continue;;
+    esac
+  fi
+
+  scripts/press_enter
+
+done
+

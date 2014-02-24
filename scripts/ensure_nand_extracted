@@ -1,0 +1,86 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+#
+# 此脚本拥有一个可选参数:
+#
+# $1 = 如果设置 'no_clear'，当启动时不会清除
+#
+
+if [ "$1" == "" ]
+then
+  clear
+fi
+
+scripts/prompt_remove_boot_extracted
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+
+  if [ ! -d WORKING_* ]
+  then
+    echo
+    echo "未发现工作文件夹，需要创建！"
+    exit 0
+  fi
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+
+    if [ -d boot ]
+    then
+
+      if [ ! -e boot/initrd.gz ]
+      then
+        echo
+        echo "在工作文件夹中未发现 boot/initrd.gz ！"
+        cd ..
+        exit 0
+      fi
+
+      if [ ! -e boot/zImage ]
+      then  
+        echo
+        echo "在工作文件夹中未发现 boot/zImage ！"
+        cd ..
+        exit 0
+      fi
+
+      echo "正在创建文件夹 'BOOT-EXTRACTED' ..."
+      mkdir ../BOOT-EXTRACTED
+
+      echo "正在复制 initrd.gz 和 zImage 到 BOOT-EXTRACTED ..."
+      cp boot/zImage ../BOOT-EXTRACTED/
+      cp boot/initrd.gz ../BOOT-EXTRACTED
+
+      echo "正在解压 ramdisk 内容 ..."
+      cd ../BOOT-EXTRACTED
+      mkdir boot.img-ramdisk
+      cd boot.img-ramdisk
+      gzip -d -c ../initrd.gz | cpio -i
+      cd ..
+      rm -f initrd.gz
+
+      cd ..
+
+    else
+      echo "错误: 未发现引导文件夹 boot ！"
+      echo
+      cd ..
+      exit 0
+    fi      
+  
+  else
+    echo "错误: 工作文件夹中未发现系统文件夹 system ！"
+    cd ..
+    exit 0
+  fi
+fi
+

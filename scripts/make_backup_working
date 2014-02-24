@@ -1,0 +1,64 @@
+############################################################################
+#
+# Copyright (c) 2011 - dsixda (dislam@rocketmail.com)
+#
+# Android 厨房是100%免费。此脚本文件仅供个人或学习使用
+#
+############################################################################
+
+found_working=`ls | grep "^WORKING_"` 
+
+if [ "$found_working" != "" ]
+then
+
+  echo
+  echo "在您继续之前:"
+  echo "现存主目录下工作文件夹可以备份到 'orignal_update' 文件夹以供以后使用；"
+  echo "否则将删除。"
+
+  echo
+  echo "已发现如下:"
+  echo $found_working
+  echo
+  echo -n "是否将已有的工作文件夹移动到 original_update 下 (默认: y): "
+
+  read do_backup
+  echo
+
+  if [ "$do_backup" == "n" ]
+  then
+    echo "正在移除 ..."
+    rm -rf WORKING_* 2>/dev/null
+
+    if [ "$?" == "1" ]
+    then
+      exit 1
+    fi
+
+  else
+
+    # Grab this value again, in case the user manually deleted the
+    # folder after he/she was prompted
+    found_working=`ls | grep -m 1 WORKING_` 
+
+    if [ "$found_working" != "" ]
+    then
+
+      #
+      # 使用备份
+      #
+
+      echo "正在移动旧工作文件夹到 original_update ..."
+      mv WORKING_* original_update 2>/dev/null
+
+      if [ "$?" == "1" ]
+      then
+        exit 1
+      fi
+    fi
+  fi
+
+  echo
+
+fi
+
