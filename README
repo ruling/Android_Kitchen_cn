@@ -7,7 +7,13 @@ https://github.com/kuairom/Android_Kitchen_cn/archive/master.zip
 
 更新说明：
 
-Added Samsung Galaxy S Advance Support
+支持合并Android4.4.2 priv-app文件夹odex，（感谢pwelyn-越狱）
+
+默认api_level 18，（感谢pwelyn-越狱）
+
+更新smali/baksmali 到2.0.3（感谢pwelyn-越狱）
+
+添加 Samsung Galaxy S Advance 支持
 
 add comments to Huawei U8860 edify definition
 

@@ -70,7 +70,7 @@ do
   echo "  1 - 导入 ROM 文件到工作文件夹"
   echo "  2 - 添加 Root 最高权限"
   echo "  3 - 添加 BusyBox 指令集"
-  echo "  4 - 关闭开机音乐"
+  echo "  4 - 禁用 开机音乐"
   echo "  5 - 对您的 ROM 进行 De-odex 操作（将apk和odex两个文件合并）"
   echo "  6 - 对所有 Apk 文件进行 Zipalign 操作，优化内存占用"
   echo "  7 - 更改 ROM 的 Wipe 操作状态"

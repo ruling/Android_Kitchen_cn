@@ -128,9 +128,11 @@ do
 
 
   num_odex_fr=`find system/framework | grep -c "\.odex$"`
+  num_odex_priv=`find system/priv-app | grep -c "\.odex$"`
   num_odex_app=`find system/app | grep -c "\.odex$"`
 
     echo "已在 system/framework 中发现 $num_odex_fr *.odex 文件"
+  echo "在 system/priv-app 下发现 $num_odex_priv 个 *.odex 文件 "
     echo "已在 system/app 中发现 $num_odex_app *.odex 文件"
 
   if [ -e preload/symlink/system/app/preload_apk_list ]
@@ -142,7 +144,7 @@ do
   fi
 
 
-  if [ $num_odex_fr == 0 ] && [ $num_odex_app == 0 ]
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app == 0 ] && [ $num_odex_priv == 0 ]
   then
     echo
     echo "不需要 de-odex!"
@@ -151,7 +153,7 @@ do
     exit 0
   fi
 
-  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ]
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ] && [ $num_odex_priv == 0 ]
   then
     echo
       echo "警告: 如果 framework 文件夹已经进行了 deodex 操作，则 app 文件夹"
@@ -171,12 +173,12 @@ do
   #
 
   echo
-    echo "请输入选择项:"
+    echo "请输入选项:"
   echo
 
-  if [ $num_odex_app -gt 0 ] || [ $num_odex_fr -gt 0 ]
+  if [ $num_odex_app -gt 0 ] || [ $num_odex_priv -gt 0 ] || [ $num_odex_fr -gt 0 ]
   then
-      echo " bb  = 备份这两个文件夹 (建议每次定制先备份)"
+    echo " bb  = 备份这两个文件夹 (如果是第一次进行odex合并!)"
   fi
 
     echo "  v  = 设置 Android 系统的 API 级别 (当前级别 = $api_level)"
@@ -192,6 +194,10 @@ do
   then
     echo "  a  = Deodex /system/app"
   fi
+  if [ $num_odex_priv -gt 0 ]
+  then
+    echo "  p  = Deodex /system/priv-app"
+  fi
   if [ $num_odex_app -gt 0 ] && [ $num_odex_fr -gt 0 ]
   then
     echo "  b  = Deodex 两个文件夹(推荐)"
@@ -206,6 +212,7 @@ do
   list1=( app )
   list2=( framework )
   list3=( framework app )
+  list4=( priv-app )
 
   if [ "$enterChoice" == "a" ]
   then
@@ -221,6 +228,9 @@ do
   elif [ "$enterChoice" == "b" ] 
   then
     dir_list="framework app"
+  elif [ "$enterChoice" == "p" ] 
+  then
+    dir_list="priv-app"
   elif [ "$enterChoice" == "s" ]
   then
     cd ..
@@ -291,13 +301,16 @@ do
 
   num_odex_app=`find system/app | grep -c "\.odex$"`
   num_apk_app=`find system/app | grep -c "\.apk$"`
+  num_odex_priv=`find system/app | grep -c "\.odex$"`
+  num_apk_priv=`find system/app | grep -c "\.apk$"`
   num_odex_fr=`find system/framework | grep -c "\.odex$"`
 
   echo
-  echo "$num_odex_app *.odex 文件仍保留在 system/app"
-  echo "$num_odex_fr *.odex 文件仍保留在 system/framework"
+  echo "system/priv-app 下仍然还有 $num_odex_priv 个 *.odex 文件"
+  echo "system/app 下仍然还有 $num_odex_app 个 *.odex 文件"
+  echo "system/framework 下仍然还有 $num_odex_fr 个 *.odex 文件"
 
-  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ]
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ] && [ $num_odex_priv -gt 0 ]
   then
     echo
     echo "警告: 如果 framework 文件夹已经进行了 Deodex 操作，则 app 文件夹"
@@ -305,7 +318,7 @@ do
   fi
 
   # For some Samsung Exynos Galaxy S2 / Note ROMs
-  if [ $num_odex_app == 0 ] && [ $num_apk_app != 0 ] && [ -e preload/symlink/system/app/preload_apk_list ]
+  if [ $num_odex_app == 0 ] && [ $num_apk_priv != 0 ] && [ $num_apk_app != 0 ] && [ -e preload/symlink/system/app/preload_apk_list ]
   then
     echo
     echo "移回所有最初发现在 /preload/symlink/system/app 的 *.apk ..."
@@ -325,7 +338,7 @@ do
   cd ..
   scripts/press_enter
 
-  if [ $num_odex_fr == 0 ] && [ $num_odex_app == 0 ]
+  if [ $num_odex_fr == 0 ] && [ $num_odex_priv == 0 ] && [ $num_odex_app == 0 ]
   then
     exit 0
   fi

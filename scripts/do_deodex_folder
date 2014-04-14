@@ -30,6 +30,7 @@ api_level=`scripts/get_api_level`
 cd WORKING_*
 
 num_odex_fr=`find system/framework | grep -c "\.odex$"`
+num_odex_priv=`find system/priv-app | grep -c "\.odex$"`
 num_odex_app=`find system/app | grep -c "\.odex$"`
 
 
@@ -87,6 +88,9 @@ do
   elif [ $folder == app ]
   then
     num_odex_folder=$num_odex_app
+  elif [ $folder == priv-app ]
+  then
+    num_odex_folder=$num_odex_priv
   else
     echo
     echo "错误: $folder 文件夹不可用!"

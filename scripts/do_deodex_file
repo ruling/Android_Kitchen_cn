@@ -92,7 +92,7 @@ then
         echo "已发现 $main_file"
         ext=jar
       else          
-        echo "错误: 无法发现 $no_ext.jar 或 $no_ext.apk"
+        echo "错误: 无法找到 $no_ext.jar 或 $no_ext.apk"
         error_found=yes
       fi
     fi
@@ -111,7 +111,7 @@ then
       echo "正在移除 $odex_file ..."
       rm -f $odex_file
 
-      echo "将 classes.dex 放入 $main_file ..."
+      echo "将 classes.dex 打包进 $main_file ..."
       zip -r -q $main_file classes.dex
       rm -f classes.dex
       if [ -e $main_file ]
