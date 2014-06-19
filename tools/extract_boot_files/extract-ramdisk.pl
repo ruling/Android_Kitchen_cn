@@ -58,5 +58,5 @@ if (-e "$ARGV[0]-ramdisk") {
 
 mkdir "$ARGV[0]-ramdisk" or die;
 chdir "$ARGV[0]-ramdisk" or die;
-system ("$compressprogram ../$ARGV[0]-ramdisk.cpio.$compressformat | cpio -i");
-system ("rm -f ../$ARGV[0]-ramdisk.cpio.$compressformat");
+system ("gzip -d -c ../$ARGV[0]-ramdisk.cpio.gz | cpio -i");
+system ("rm -f ../$ARGV[0]-ramdisk.cpio.gz");

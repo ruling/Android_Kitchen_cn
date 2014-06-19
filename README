@@ -1,4 +1,3 @@
-
 欢迎使用dsixda的Android厨房中文版。这是用于制造商如HTC，三星和许多其他制造Android设备的一个ROM的定制厨房。 
 
 下载安卓厨房中文版:
@@ -6,6 +5,22 @@
 https://github.com/kuairom/Android_Kitchen_cn/archive/master.zip
 
 更新说明：
+
+1.解决无priv-app文件夹进入odex合并显示find: `system/priv-app': No such file or directory
+
+2.解决备份时无法备份priv-app文件夹问题
+
+3.加入判断（如果有app framework priv-app 三个文件夹提示备份三个文件夹，如果只有app framework 两个文件夹提示备份两个文件夹）
+
+4.更新SuperSU v1.94，Superuser v1.0.3.0
+
+5.根据SuperSU和Superuser脚本重新写权限脚本
+
+6.添加判断x86 armeabi,根据CPU来添加权限文件
+
+厨房默认使用update-script脚本进行操作，最后生成刷机包会转换脚本为updater-script，因为什么转换自己百度一下
+
+如果updater-script刷机失败或其他原因，请更换刷机包内的update-binary，和修改updater-script脚本命令
 
 支持合并Android4.4.2 priv-app文件夹odex，（感谢pwelyn-越狱）
 
@@ -30,7 +45,6 @@ ignore .swp files
 增加 Galaxy S4 variants (AT&T/Rogers/Bell/Telus/T-Mobile) (测试), GT-I9500/I9505（未测试） 的支持
 
 增加 HTC One (m7)支持
-
 
 修正了一个可能无法检测到的更新脚本BusyBox的条目，造成厨房可能添加其他BusyBox的问题
 

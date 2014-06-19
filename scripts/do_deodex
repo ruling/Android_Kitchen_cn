@@ -40,7 +40,7 @@ do
 
   if [ ! -d system/app ]
   then
-    echo "system/app 丢失！"
+    echo "system/app 文件夹丢失"
     cd ..
     scripts/press_enter
     exit 0
@@ -48,7 +48,7 @@ do
 
   if [ ! -d system/framework ]
   then
-    echo "system/framework 丢失！"
+    echo "system/framework 文件夹丢失"
     cd ..
     scripts/press_enter
     exit 0
@@ -128,12 +128,21 @@ do
 
 
   num_odex_fr=`find system/framework | grep -c "\.odex$"`
-  num_odex_priv=`find system/priv-app | grep -c "\.odex$"`
   num_odex_app=`find system/app | grep -c "\.odex$"`
 
-    echo "已在 system/framework 中发现 $num_odex_fr *.odex 文件"
+  echo "在 system/framework 下发现 $num_odex_fr 个 *.odex 文件 "
+  echo "在 system/app 下发现 $num_odex_app 个 *.odex 文件 "
+
+  if [ -d system/priv-app ]
+  then
+    if [ ! -d system/priv-app ]
+    then
+    echo 
+    else
+  num_odex_priv=`find system/priv-app | grep -c "\.odex$"`
   echo "在 system/priv-app 下发现 $num_odex_priv 个 *.odex 文件 "
-    echo "已在 system/app 中发现 $num_odex_app *.odex 文件"
+    fi
+  fi
 
   if [ -e preload/symlink/system/app/preload_apk_list ]
   then
@@ -156,7 +165,7 @@ do
   if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ] && [ $num_odex_priv == 0 ]
   then
     echo
-      echo "警告: 如果 framework 文件夹已经进行了 deodex 操作，则 app 文件夹"
+      echo "警告: 如果 framework 文件夹已经进行了 deodex 操作，则其他apk文件夹"
       echo "也必须进行 deodex 操作."
     echo
   fi
@@ -173,17 +182,22 @@ do
   #
 
   echo
-    echo "请输入选项:"
+  echo "输入选项:"
   echo
 
-  if [ $num_odex_app -gt 0 ] || [ $num_odex_priv -gt 0 ] || [ $num_odex_fr -gt 0 ]
+  if [ $num_odex_app -gt 0 ] && [ $num_odex_fr -gt 0 ]
   then
-    echo " bb  = 备份这两个文件夹 (如果是第一次进行odex合并!)"
+    if [ $num_odex_app -gt 0 ] && [[ $num_odex_priv -gt 0 ]] && [ $num_odex_fr -gt 0 ]
+    then
+      echo "  bc  = 备份三个文件夹(推荐)"
+    else
+      echo "  bb  = 备份两个文件夹(推荐)"
+    fi
   fi
 
-    echo "  v  = 设置 Android 系统的 API 级别 (当前级别 = $api_level)"
-    echo
-    echo "       选择前请确保你设置了正确的API级别"
+  echo "  v  = 设置Android操作系统的版本 (当前 API 级别 = $api_level)"
+  echo
+  echo "       重要：确保你设置正确的 API 级别"
   echo
 
   if [ $num_odex_fr -gt 0 ]
@@ -194,18 +208,23 @@ do
   then
     echo "  a  = Deodex /system/app"
   fi
-  if [ $num_odex_priv -gt 0 ]
+  if [[ $num_odex_priv -gt 0 ]]
   then
     echo "  p  = Deodex /system/priv-app"
   fi
   if [ $num_odex_app -gt 0 ] && [ $num_odex_fr -gt 0 ]
   then
-    echo "  b  = Deodex 两个文件夹(推荐)"
+    if [ $num_odex_app -gt 0 ] && [[ $num_odex_priv -gt 0 ]] && [ $num_odex_fr -gt 0 ]
+    then
+      echo "  d  = Deodex 三个文件夹(推荐)"
+    else
+      echo "  b  = Deodex 两个文件夹(推荐)"
+    fi
   fi
   echo "  s  = Deodex 单个文件"
   echo "  x  = 退出"
   echo
-    echo -n "请输入选择项："
+  echo -n "? "
 
   read enterChoice
 
@@ -213,6 +232,7 @@ do
   list2=( framework )
   list3=( framework app )
   list4=( priv-app )
+  list5=( framework priv-app app)
 
   if [ "$enterChoice" == "a" ]
   then
@@ -228,6 +248,9 @@ do
   elif [ "$enterChoice" == "b" ] 
   then
     dir_list="framework app"
+  elif [ "$enterChoice" == "d" ] 
+  then
+    dir_list="framework priv-app app"
   elif [ "$enterChoice" == "p" ] 
   then
     dir_list="priv-app"
@@ -253,10 +276,10 @@ do
       cd system/$f
 
       echo
-        echo "正在工作文件夹外创建备份文件夹 $backup_folder ..."
+      echo "在 Working 文件夹以外创建备份文件夹 $backup_folder ..."
       mkdir ../../../$backup_folder
       cp  -r * ../../../$backup_folder/
-        echo "完成备份 $f 文件夹。"
+      echo "$f 文件夹已完成备份."
 
       cd ../..
     done
@@ -264,7 +287,34 @@ do
     cd ..
     scripts/press_enter
     continue
+  elif [ "$enterChoice" == "bc" ]
+  then
 
+    #
+    # 备份
+    #
+
+    folder_list=( framework app priv-app )
+    date_str=`date '+%m%d%y_%H%M%S'`
+
+    for f in ${folder_list[@]}
+    do
+
+      backup_folder="old_`echo -n $f`_$date_str"
+      cd system/$f
+
+      echo
+      echo "在 Working 文件夹以外创建备份文件夹 $backup_folder ..."
+      mkdir ../../../$backup_folder
+      cp  -r * ../../../$backup_folder/
+      echo "$f 文件夹已完成备份."
+
+      cd ../..
+    done
+
+    cd ..
+    scripts/press_enter
+    continue
   elif [ "$enterChoice" == "x" ]
   then
     cd ..
@@ -301,20 +351,32 @@ do
 
   num_odex_app=`find system/app | grep -c "\.odex$"`
   num_apk_app=`find system/app | grep -c "\.apk$"`
-  num_odex_priv=`find system/app | grep -c "\.odex$"`
-  num_apk_priv=`find system/app | grep -c "\.apk$"`
   num_odex_fr=`find system/framework | grep -c "\.odex$"`
 
   echo
-  echo "system/priv-app 下仍然还有 $num_odex_priv 个 *.odex 文件"
   echo "system/app 下仍然还有 $num_odex_app 个 *.odex 文件"
   echo "system/framework 下仍然还有 $num_odex_fr 个 *.odex 文件"
-
-  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ] && [ $num_odex_priv -gt 0 ]
+  if [ -d system/priv-app ]
   then
+    if [ ! -d system/priv-app ]
+    then
+    echo 
+    else
+  num_odex_priv=`find system/priv-app | grep -c "\.odex$"`
+  num_apk_priv=`find system/priv-app | grep -c "\.apk$"`
+  echo "system/priv-app 下仍然还有 $num_odex_priv 个 *.odex 文件 "
+    fi
+  fi
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ] 
+  then
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ] && [[ $num_odex_priv -gt 0 ]]
+    then
     echo
-    echo "警告: 如果 framework 文件夹已经进行了 Deodex 操作，则 app 文件夹"
-    echo "      也必须进行 Deodex 操作。"
+    echo "警告: 如果 framework 文件夹已经 deodex，那么 app priv-app文件夹也需要 deodex."
+    else
+    echo
+    echo "警告: 如果 framework 文件夹已经 deodex，那么 app 文件夹也需要 deodex."
+    fi
   fi
 
   # For some Samsung Exynos Galaxy S2 / Note ROMs
@@ -338,7 +400,7 @@ do
   cd ..
   scripts/press_enter
 
-  if [ $num_odex_fr == 0 ] && [ $num_odex_priv == 0 ] && [ $num_odex_app == 0 ]
+  if [ $num_odex_fr == 0 ] && [[ $num_odex_priv == 0 ]] && [ $num_odex_app == 0 ]
   then
     exit 0
   fi

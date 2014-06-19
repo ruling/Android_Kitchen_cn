@@ -7,14 +7,12 @@
 ############################################################################
 
 
-if [ "$1" == "" ]
-then
-  clear
+if [ "$1" == "" ]; then
+	clear
 fi
 
-if [ ! -d WORKING_* ]
-then
-  echo "未发现工作文件夹！"
+if [ ! -d WORKING_* ]; then
+	echo "未发现 Working 文件夹!"
   scripts/press_enter
   exit 0
 fi
@@ -27,14 +25,13 @@ echo
 echo "获取 ROOT 权限"
 echo "--------------------------------------------"
 echo 
-echo "以下是为获取 Root 权限进行的操作:"
+echo "以下将获取 ROOT 权限:"
 echo
-echo "- 添加 Superuser 程序 和 su 文件"
-echo "- 添加必须命令行到 update-script 刷机脚本"
+echo "- 添加 Superuser 应用程序和 su 二进制文件"
+echo "- 将所需要的命令行添加到 update-script 脚本"
 
-if [ "$sgs" == "0" ]
-then
-  echo "- 在 ramdisk 中更新 default.prop "
+if [ "$sgs" == "0" ]; then
+  echo "- 更新在 ramdisk 中的 default.prop"
 fi
 echo 
 echo "--------------------------------------------"
@@ -42,136 +39,128 @@ echo
 
 cd WORKING_*
 
-if [ ! -d system ]
-then
-  echo "未发现系统文件夹 System ！"
+if [ ! -d system ]; then
+	echo "未发现 System 文件夹!"
   cd ..
   scripts/press_enter
   exit 0
 fi
 
-cd system
-
-if [ ! -e build.prop ]
-then
-  echo "错误: 未发现 build.prop 设置文件！"
-  cd ../..
-  scripts/press_enter
-  exit 0
+if [ ! -e system/build.prop ]; then
+	echo "错误: 未发现 build.prop 文件"
+	cd ..
+	scripts/press_enter
+	exit 0
 fi
 
-su_path=`find . -name su`
-super_path=`find . -iname Superuser.apk`
+SUEXISTS=`find system/bin -name su | wc -l`
+SUEXISTS=`expr $SUEXISTS + $(find system/xbin -name "su" | wc -l)`
+SUEXISTS=`expr $SUEXISTS + $(find system/app -iname "Superuser" | wc -l)`
+SUEXISTS=`expr $SUEXISTS + $(find system/app -iname "SuperSU" | wc -l)`
+SUEXISTS=`expr $SUEXISTS + $(find system/xbin -name "daemonsu" | wc -l)`
+SUEXISTS=`expr $SUEXISTS + $(find system/bin -iname ".su" | wc -l)`
+SUEXISTS=`expr $SUEXISTS + $(find system/etc -iname "99SuperSUDaemon" | wc -l)`
 
-super_su_exists=0
-if [ "$super_path" == "" ]
-then
-  super_path=`find . -iname SuperSU.apk`
-  if [ "$super_path" != "" ]
-  then
-    super_su_exists=1
-  fi
-fi
-overwrite=0
+if [ $SUEXISTS -gt 0 ]; then
+	echo "在 /system 文件夹中已包含了su二进制文件"
+	echo -n "是否覆盖(y/n)? (默认: n): "
+	read CHOICE
+	if [ "$CHOICE" != "y" ]; then
+		cd ..
+		exit 0
+	else
+		# Delete all known dependencies
+		for dep in 'system/xbin/daemonsu' 'system/bin/.ext/.su' 'system/bin/su' 'system/etc/init.d/99SuperSUDaemon'; do
+			rm -f $dep
+		done
 
-if [ "$su_path" != "" ] && [ "$super_path" != "" ] 
-then
-  echo "在/system文件夹中已存在$su_path和$super_path"
-  echo -n "覆盖(y/n)? (默认为: n): "
-  read do_su
-
-  if [ "$do_su" != "y" ]
-  then
-    cd ../..
-    exit 0
-  else
-    overwrite=1
-    echo
-    echo
-  fi
-
+		echo
+		echo
+	fi
 fi
 
 
 echo "你想要安装哪个版本 Superuser 程序包?"
 echo
 
-echo " c - Chainfire 的 SuperSU"
-echo " d - ChainsDD 的版本 " 
-echo " v - 原始版本 (非常老的版本)"
+echo " c - Chainfire  SuperSU"
+echo " k - Koush  Superuser"
 echo
-echo " x - 取消 ROOT  权限 (默认)"
-echo
-
-echo -n "请输入选择项： "
-read enterVersion
+echo " x - 取消 ROOT 权限(默认)"
 echo
 
-if [ "$enterVersion" == "c" ]
-then
-  folder=chainfire
-elif [ "$enterVersion" == "d" ]
-then
-  if [ "`grep -c ro.build.version.release=1 build.prop`" != "0" ]
-  then
-    folder=cupcake-donut
-  else
-    folder=current
-  fi
-elif [ "$enterVersion" == "v" ]
-then
-  folder=old
+echo -n "? "
+read CHOICE
+echo
+
+if [ "$CHOICE" == "c" ]; then
+	folder=chainfire
+elif [ "$CHOICE" == "k" ]; then
+	folder=koush
 else
-  echo "已经取消"
+  echo "取消"
   cd ../..
   exit 1
 fi
 
-if [ "$overwrite" == "1" ]
-then
-  echo
-  echo "正在覆盖旧的 su 和 Superuser 程序 ..."
-  rm -fv $su_path
-  rm -fv $super_path
-fi
+#
+# 检查cpu
+#
 
+if [ "$CHOICE" == "c" ]; then
+ARCH=$( grep ro.product.cpu.abi system/build.prop )
 
-
-if [ -d xbin ]
-then
-  echo 发现 /system/xbin
+# x86 needs to match: i486, i686, x86_64, ...
+if echo "$ARCH" | grep -q 86; then
+  PLATFORM=x86
+elif [ "$ARCH" = "mips" -o "$ARCH" = "mips64" ]; then
+  PLATFORM=mips
 else
-  echo 建立 /system/xbin
-  mkdir xbin
+  PLATFORM=armeabi
 fi
+BIN=../tools/su_files/$folder/$PLATFORM
+COM=../tools/su_files/$folder/common
+	mkdir -p system/bin/.ext
+	mkdir -p system/etc/init.d
+cp $BIN/su system/xbin/daemonsu
+cp $BIN/su system/xbin/su
+cp $BIN/su system/bin/.ext/.su
+cp $COM/Superuser.apk system/app/Superuser.apk
+cp $COM/install-recovery.sh system/etc/install-recovery.sh
+cp $COM/99SuperSUDaemon system/etc/init.d/99SuperSUDaemon
+echo 1 > system/etc/.installed_su_daemon
+elif [ "$CHOICE" == "k" ]; then
+ARCH=$( grep ro.product.cpu.abi system/build.prop )
 
-if [ "$enterVersion" == "d" ]
-then
-  cp -fv ../../tools/su_files/chainsdd/Superuser.apk app
-  cp -fv ../../tools/su_files/chainsdd/$folder/su xbin
+# x86 needs to match: i486, i686, x86_64, ...
+if echo "$ARCH" | grep -q 86; then
+  PLATFORM=x86
+elif [ "$ARCH" = "mips" -o "$ARCH" = "mips64" ]; then
+  PLATFORM=mips
 else
-  cp -fv ../../tools/su_files/$folder/app/Superuser.apk app
-  cp -fv ../../tools/su_files/$folder/bin/su xbin
+  PLATFORM=armeabi
 fi
-
-if [ "$super_su_exists" == "1" ] && [ "$enterVersion" == "c" ]
-then
-  mv -fv app/Superuser.apk app/SuperSU.apk
+BIN=../tools/su_files/$folder/$PLATFORM
+cp $BIN/su system/xbin/su
+cp ../tools/su_files/$folder/Superuser.apk system/app/Superuser.apk
+  if [ ! -f "system/etc/.has_su_daemon" ]
+  then
+      cp ../tools/su_files/$folder/install-recovery.sh system/etc/install-recovery.sh
+      touch system/etc/.installed_su_daemon
+  fi
 fi
-
-cd ../..
+cd ..
 
 echo
 scripts/add_su_to_update_script
 
-if [ "$sgs" == "0" ]
-then
-  scripts/do_root_boot_img
+if [ "$sgs" == "0" ]; then
+	scripts/do_root_boot_img
 fi
 
 echo 
-echo "已完成获取 Root 权限"
+echo "ROOT 权限添加完成"
 echo
 
 scripts/press_enter
-
+	exit 0
